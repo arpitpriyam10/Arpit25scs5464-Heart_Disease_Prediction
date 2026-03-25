@@ -1,0 +1,112 @@
+
+import pandas as pd
+import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    roc_auc_score
+)
+
+# ==========================================
+# 1. Load Dataset
+# ==========================================
+# Make sure heart.csv is in the same folder
+data = pd.read_csv("heart.csv")
+
+print("Dataset Loaded Successfully!\n")
+
+# ==========================================
+# 2. Basic Data Preprocessing
+# ==========================================
+
+# Handle missing values
+data.fillna(data.median(numeric_only=True), inplace=True)
+
+# Separate features and target
+if "target" not in data.columns:
+    raise ValueError("Dataset must contain 'target' column")
+
+X = data.drop("target", axis=1)
+y = data["target"]
+
+# ==========================================
+# 3. Train-Test Split (80-20)
+# ==========================================
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+print("Data Split Completed!\n")
+
+# ==========================================
+# 4. Train Random Forest Model
+# ==========================================
+model = RandomForestClassifier(
+    n_estimators=100,
+    max_depth=6,
+    min_samples_split=2,
+    min_samples_leaf=1,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+print("Model Training Completed!\n")
+
+# ==========================================
+# 5. Predictions
+# ==========================================
+y_pred = model.predict(X_test)
+y_prob = model.predict_proba(X_test)[:, 1]
+
+# ==========================================
+# 6. Model Evaluation
+# ==========================================
+accuracy = accuracy_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, y_prob)
+
+print("===== MODEL PERFORMANCE =====")
+print(f"Accuracy: {accuracy:.4f}")
+print(f"ROC-AUC Score: {roc_auc:.4f}\n")
+
+print("Classification Report:\n")
+print(classification_report(y_test, y_pred))
+
+print("Confusion Matrix:\n")
+print(confusion_matrix(y_test, y_pred))
+
+# ==========================================
+# 7. Feature Importance
+# ==========================================
+print("\n===== FEATURE IMPORTANCE =====")
+
+feature_importance = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": model.feature_importances_
+}).sort_values(by="Importance", ascending=False)
+
+print(feature_importance)
+
+# ==========================================
+# 8. Sample Prediction (Optional)
+# ==========================================
+print("\n===== SAMPLE PREDICTION =====")
+
+sample = X_test.iloc[0].values.reshape(1, -1)
+prediction = model.predict(sample)
+
+if prediction[0] == 1:
+    print("⚠️ High Risk of Heart Disease")
+else:
+    print("✅ Low Risk of Heart Disease")
+
+# ==========================================
+# END OF PROGRAM
+# ==========================================
